@@ -547,7 +547,7 @@ def get_count(account, sensor_type):
     subject_2 = None
     filter_text = None
     
-    _LOGGER.error("**Getting %s count", str(sensor_type))
+    _LOGGER.debug("**Getting %s count", str(sensor_type))
 
     if sensor_type == "usps_delivered":
         email = USPS_Packages_Email
