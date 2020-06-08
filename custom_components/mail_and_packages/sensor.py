@@ -19,6 +19,7 @@ import datetime
 import uuid
 from datetime import timedelta
 from shutil import copyfile
+import quopri
 
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
@@ -545,6 +546,8 @@ def get_count(account, sensor_type):
     subject = None
     subject_2 = None
     filter_text = None
+    
+    _LOGGER.error("**Getting %s count", str(sensor_type))
 
     if sensor_type == "usps_delivered":
         email = USPS_Packages_Email
@@ -583,9 +586,11 @@ def get_count(account, sensor_type):
     if rv == 'OK':
         if filter_text is not None:
             count += find_text(data[0], account, filter_text)
+            _LOGGER.debug("Found %s from %s with subject 1 %s and body text %s from %s",
+                      count, email, subject, filter_text, data[0])
         else:
             count += len(data[0].split())
-        _LOGGER.debug("Found from %s with subject 1 %s, %s", email, subject,
+            _LOGGER.debug("Found %s from %s with subject 1 %s from %s", count, email, subject,
                       data[0])
 
     if subject_2 is not None:
@@ -602,10 +607,14 @@ def get_count(account, sensor_type):
         if rv == 'OK':
             if filter_text is not None:
                 count += find_text(data[0], account, filter_text)
+                _LOGGER.debug("Found %s from %s with subject 1 %s with body text %s from %s",
+                      count, email, subject, filter_text)
             else:
                 count += len(data[0].split())
-            _LOGGER.debug("Found from %s with subject 2 %s, %s", email,
+                _LOGGER.debug("Found %s from %s with subject 2 %s from %s", count, email,
                           subject_2, data[0])
+                          
+    _LOGGER.debug("%s: %s", str(sensor_type), count)
 
     return count
 
@@ -623,9 +632,11 @@ def find_text(sdata, account, search):
         for response_part in data:
             if isinstance(response_part, tuple):
                 msg = email.message_from_bytes(response_part[1])
-                email_msg = str(msg.get_payload(0))
-                if email_msg.find(search):
-                    _LOGGER.debug("Found %s in email", search)
+                email_msg = quopri.decodestring(str(msg.get_payload(0)))
+                email_msg = email_msg.decode('utf-8')
+                text_found = email_msg.find(search)
+                _LOGGER.debug("Find results: %s", text_found)
+                if text_found > 0:
                     count += 1
 
     return count
