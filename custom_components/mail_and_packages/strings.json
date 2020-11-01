@@ -14,6 +14,7 @@
           "host": "Host",
           "password": "Password",
           "port": "Port",
+          "starttls": "STARTTLS?",
           "username": "Username"
         },
         "description": "Please enter the connection information of your mail server.",
@@ -46,6 +47,7 @@
           "host": "Host",
           "password": "Password",
           "port": "Port",
+          "starttls": "STARTTLS?",
           "username": "Username"
         },
         "description": "Please enter the connection information of your mail server.",
