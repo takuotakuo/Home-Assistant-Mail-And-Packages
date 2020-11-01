@@ -137,9 +137,9 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         image_security = DEFAULT_IMAGE_SECURITY
         generate_mp4 = DEFAULT_FFMPEG
         
-        if starttls:
+        if self._data["starttls"]:
             context = ssl.create_default_context()
-            account = imaplib.IMAP4(host,port)
+            account = imaplib.IMAP4(self._data["host"],self._data["port"])
             account.starttls(context)
         else:
             account = imaplib.IMAP4_SSL(self._data["host"], self._data["port"])
