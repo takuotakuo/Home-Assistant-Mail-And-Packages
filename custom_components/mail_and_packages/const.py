@@ -13,6 +13,7 @@ CONF_GENERATE_MP4 = "generate_mp4"
 # Defaults
 DEFAULT_NAME = "Mail And Packages"
 DEFAULT_PORT = "993"
+DEFAULT_STARTTLS = False
 DEFAULT_FOLDER = '"INBOX"'
 DEFAULT_PATH = "/home/homeassistant/.homeassistant/images/mail_and_packages/"
 DEFAULT_IMAGE_SECURITY = True
