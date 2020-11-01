@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 import voluptuous as vol
 import imaplib
+import ssl
 import os
 from shutil import which
 
@@ -12,6 +13,7 @@ from homeassistant import config_entries
 from .const import (
     DOMAIN,
     DEFAULT_PORT,
+    DEFAULT_STARTTLS,
     DEFAULT_PATH,
     DEFAULT_FOLDER,
     DEFAULT_IMAGE_SECURITY,
@@ -25,7 +27,7 @@ from .const import (
     CONF_IMAGE_SECURITY,
     CONF_GENERATE_MP4,
 )
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_PORT, CONF_STARTTLS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,6 +53,7 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             valid = await self._test_login(
                 user_input[CONF_HOST],
                 user_input[CONF_PORT],
+                user_input[CONF_STARTTLS],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
             )
@@ -69,6 +72,7 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         # Defaults
         host = ""
         port = DEFAULT_PORT
+        starttls = DEFAULT_STARTTLS
         username = ""
         password = ""
 
@@ -77,6 +81,8 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 host = user_input["host"]
             if "port" in user_input:
                 port = user_input["port"]
+            if "starttls" in user_input:
+                starttls = user_input["starttls"]
             if "username" in user_input:
                 username = user_input["username"]
             if "password" in user_input:
@@ -85,6 +91,7 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = OrderedDict()
         data_schema[vol.Required("host", default=host)] = str
         data_schema[vol.Required("port", default=port)] = vol.Coerce(int)
+        data_schema[vol.Required("starttls", default=starttls)] = vol.Coerce(bool)
         data_schema[vol.Required("username", default=username)] = str
         data_schema[vol.Required("password", default=password)] = str
         return self.async_show_form(
@@ -129,8 +136,13 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         gif_duration = DEFAULT_GIF_DURATION
         image_security = DEFAULT_IMAGE_SECURITY
         generate_mp4 = DEFAULT_FFMPEG
-
-        account = imaplib.IMAP4_SSL(self._data["host"], self._data["port"])
+        
+        if starttls:
+            context = ssl.create_default_context()
+            account = imaplib.IMAP4(host,port)
+            account.starttls(context)
+        else:
+            account = imaplib.IMAP4_SSL(self._data["host"], self._data["port"])
         status, data = account.login(self._data["username"], self._data["password"])
         if status != "OK":
             _LOGGER.error("IMAP Login failed!")
@@ -181,11 +193,16 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="config_2", data_schema=vol.Schema(data_schema), errors=self._errors
         )
 
-    async def _test_login(self, host, port, user, pwd):
+    async def _test_login(self, host, port, starttls, user, pwd):
         """function used to login"""
         # Attempt to catch invalid mail server hosts
         try:
-            account = imaplib.IMAP4_SSL(host, port)
+            if starttls:
+                context = ssl.create_default_context()
+                account = imaplib.IMAP4(host,port)
+                account.starttls(context)
+            else:
+                account = imaplib.IMAP4_SSL(host, port)
         except imaplib.IMAP4.error as err:
             _LOGGER.error("Error connecting into IMAP Server: %s", str(err))
             return False
@@ -234,6 +251,7 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
             valid = await self._test_login(
                 user_input[CONF_HOST],
                 user_input[CONF_PORT],
+                user_input[CONF_STARTTLS],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
             )
@@ -252,6 +270,7 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
         # Defaults
         host = self.config.options.get(CONF_HOST)
         port = self.config.options.get(CONF_PORT)
+        starttls = self.config.options.get(CONF_STARTTLS)
         username = self.config.options.get(CONF_USERNAME)
         password = self.config.options.get(CONF_PASSWORD)
 
@@ -260,6 +279,8 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
                 host = user_input["host"]
             if "port" in user_input:
                 port = user_input["port"]
+            if "starttls" in user_input:
+                startts = user_input["starttls"]
             if "username" in user_input:
                 username = user_input["username"]
             if "password" in user_input:
@@ -268,6 +289,7 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
         data_schema = OrderedDict()
         data_schema[vol.Required("host", default=host)] = str
         data_schema[vol.Required("port", default=port)] = vol.Coerce(int)
+        data_schema[vol.Required("starttls", default=starttls)] = vol.Coerce(bool)
         data_schema[vol.Required("username", default=username)] = str
         data_schema[vol.Required("password", default=password)] = str
         return self.async_show_form(
@@ -312,8 +334,12 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
         gif_duration = self.config.options.get(CONF_DURATION)
         image_security = self.config.options.get(CONF_IMAGE_SECURITY)
         generate_mp4 = self.config.options.get(CONF_GENERATE_MP4)
-
-        account = imaplib.IMAP4_SSL(self._data["host"], self._data["port"])
+        if starttls:
+            context = ssl.create_default_context()
+            account = imaplib.IMAP4(host,port)
+            account.starttls(context)
+        else:
+            account = imaplib.IMAP4_SSL(self._data["host"], self._data["port"])
         status, data = account.login(self._data["username"], self._data["password"])
         if status != "OK":
             _LOGGER.error("IMAP Login failed!")
@@ -366,11 +392,16 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
             errors=self._errors,
         )
 
-    async def _test_login(self, host, port, user, pwd):
+    async def _test_login(self, host, port, starttls, user, pwd):
         """function used to login"""
         # Attempt to catch invalid mail server hosts
         try:
-            account = imaplib.IMAP4_SSL(host, port)
+            if starttls:
+                context = ssl.create_default_context()
+                account = imaplib.IMAP4(host,port)
+                account.starttls(context)
+            else:
+                account = imaplib.IMAP4_SSL(host, port)
         except imaplib.IMAP4.error as err:
             _LOGGER.error("Error connecting into IMAP Server: %s", str(err))
             return False
