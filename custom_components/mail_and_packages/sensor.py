@@ -23,7 +23,7 @@ import quopri
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD, CONF_STARTTLS
 
 from .const import (
     CONF_FOLDER,
@@ -122,6 +122,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         CONF_USERNAME: entry.data[CONF_USERNAME],
         CONF_PASSWORD: entry.data[CONF_PASSWORD],
         CONF_PORT: entry.data[CONF_PORT],
+        CONF_STARTTLS: entry.data[CONF_STARTTLS],
         CONF_FOLDER: entry.data[CONF_FOLDER],
         CONF_PATH: entry.data[CONF_PATH],
         CONF_DURATION: entry.data[CONF_DURATION],
@@ -146,6 +147,7 @@ class EmailData:
         """Initialize the data object."""
         self._host = config.get(CONF_HOST)
         self._port = config.get(CONF_PORT)
+        self._starttls = config.get(CONF_STARTTLS)
         self._folder = config.get(CONF_FOLDER)
         self._user = config.get(CONF_USERNAME)
         self._pwd = config.get(CONF_PASSWORD)
@@ -173,7 +175,7 @@ class EmailData:
         """Get the latest data"""
         if self._host is not None:
             """Login to email server and select the folder"""
-            account = login(self._host, self._port, self._user, self._pwd)
+            account = login(self._host, self._port, self._starttls, self._user, self._pwd)
             selectfolder(account, self._folder)
 
             if self._image_security:
@@ -318,12 +320,17 @@ class PackagesSensor(Entity):
         self._state = self.data._data[self.type]
 
 
-def login(host, port, user, pwd):
+def login(host, port, starttls, user, pwd):
     """function used to login"""
 
     # Catch invalid mail server / host names
     try:
-        account = imaplib.IMAP4_SSL(host, port)
+        if starttls:
+            context = ssl.create_default_context()
+            account = imaplib.IMAP4(host,port)
+            account.starttls(context)
+        else:
+            account = imaplib.IMAP4_SSL(host, port)
     except imaplib.IMAP4.error as err:
         _LOGGER.error("Error connecting into IMAP Server: %s", str(err))
         return False
