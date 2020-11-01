@@ -280,7 +280,7 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
             if "port" in user_input:
                 port = user_input["port"]
             if "starttls" in user_input:
-                startts = user_input["starttls"]
+                starttls = user_input["starttls"]
             if "username" in user_input:
                 username = user_input["username"]
             if "password" in user_input:
