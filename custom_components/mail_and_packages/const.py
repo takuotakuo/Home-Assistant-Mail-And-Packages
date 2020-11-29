@@ -9,6 +9,7 @@ CONF_DURATION = "gif_duration"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_IMAGE_SECURITY = "image_security"
 CONF_GENERATE_MP4 = "generate_mp4"
+CONF_STARTTLS = "starttls"
 
 # Defaults
 DEFAULT_NAME = "Mail And Packages"
