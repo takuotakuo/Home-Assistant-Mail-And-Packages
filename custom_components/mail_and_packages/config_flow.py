@@ -26,8 +26,9 @@ from .const import (
     CONF_PATH,
     CONF_IMAGE_SECURITY,
     CONF_GENERATE_MP4,
+    CONF_STARTTLS
 )
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_PORT, CONF_STARTTLS
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_PORT
 
 _LOGGER = logging.getLogger(__name__)
 
